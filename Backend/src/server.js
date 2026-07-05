@@ -7,8 +7,23 @@ const notFound = require("./middleware/notFound");
 
 const app = express();
 
+const allowedOrigins = (env.CORS_ORIGIN || env.FRONTEND_URL || "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(null, false);
+  },
   credentials: true,
 }));
 
