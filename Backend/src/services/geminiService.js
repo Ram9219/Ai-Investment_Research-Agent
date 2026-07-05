@@ -1,11 +1,11 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 const env = require("../config/env");
 
 class GeminiService {
   constructor() {
     this.apiKey = env.GEMINI_API_KEY || env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
-    this.genAI = this.apiKey ? new GoogleGenerativeAI(this.apiKey) : null;
-    this.model = this.genAI ? this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" }) : null;
+    this.genAI = this.apiKey ? new GoogleGenAI({ apiKey: this.apiKey }) : null;
+    this.model = "gemini-3.5-flash";
   }
 
   async analyzeInvestment(financialData, news) {
@@ -39,8 +39,11 @@ Evaluate:
 - Recent news impact
 - Final recommendation`;
 
-      const result = await this.model.generateContent(prompt);
-      const responseText = result?.response?.text?.() || "";
+      const result = await this.genAI.models.generateContent({
+        model: this.model,
+        contents: prompt,
+      });
+      const responseText = result?.text || "";
 
       if (!responseText) {
         throw new Error("Empty Gemini response");
