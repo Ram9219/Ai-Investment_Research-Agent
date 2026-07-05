@@ -65,9 +65,9 @@ const formatPercent = (value) => {
   return `${(numericValue * 100).toFixed(1)}%`;
 };
 
-const normalizeRecommendation = (action) => {
-  if (!action) {
-    return "NULL";
+const normalizeRecommendation = (action, isFallback = false) => {
+  if (isFallback || action === null || action === undefined || action === '') {
+    return null;
   }
 
   const normalized = String(action).toUpperCase();
@@ -76,6 +76,15 @@ const normalizeRecommendation = (action) => {
   }
 
   return 'HOLD';
+};
+
+const normalizeConfidence = (confidence, isFallback = false) => {
+  if (isFallback || confidence === null || confidence === undefined || confidence === '') {
+    return null;
+  }
+
+  const numericValue = Number(confidence);
+  return Number.isFinite(numericValue) ? numericValue : null;
 };
 
 const normalizeResearchResponse = (payload, companyName) => {
@@ -104,11 +113,13 @@ const normalizeResearchResponse = (payload, companyName) => {
       weekHigh: weekHigh !== null ? formatCurrency(weekHigh) : 'N/A',
       weekLow: weekLow !== null ? formatCurrency(weekLow) : 'N/A'
     },
-    recommendation: {
-      action: normalizeRecommendation(analysis?.recommendation),
-      confidence: Number(analysis?.confidence ?? 0),
-      reasoning: analysis?.reasoning || 'No reasoning available.'
-    },
+    recommendation: isFallback
+      ? null
+      : {
+          action: normalizeRecommendation(analysis?.recommendation, isFallback),
+          confidence: normalizeConfidence(analysis?.confidence, isFallback),
+          reasoning: analysis?.reasoning || 'No reasoning available.'
+        },
     isFallback,
     pros: Array.isArray(analysis?.pros) ? analysis.pros : [],
     cons: Array.isArray(analysis?.cons) ? analysis.cons : [],

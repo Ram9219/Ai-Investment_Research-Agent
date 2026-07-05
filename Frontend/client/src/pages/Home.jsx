@@ -23,6 +23,31 @@ const Home = () => {
     await analyzeCompany(query);
   };
 
+  const getErrorVariant = (errorMessage = '') => {
+    const normalizedError = errorMessage.toLowerCase();
+
+    if (normalizedError.includes('no publicly listed company') || normalizedError.includes('company not found')) {
+      return 'company';
+    }
+
+    if (normalizedError.includes('network') || normalizedError.includes('fetch') || normalizedError.includes('failed')) {
+      return 'network';
+    }
+
+    if (normalizedError.includes('unavailable') || normalizedError.includes('fallback')) {
+      return 'ai';
+    }
+
+    if (normalizedError.includes('news')) {
+      return 'news';
+    }
+
+    return 'default';
+  };
+
+  const errorVariant = getErrorVariant(error);
+  const errorTitle = error?.includes('No publicly listed company') ? 'Company not found' : error?.includes('AI recommendation') ? 'AI unavailable' : 'Analysis unavailable';
+
   return (
     <div className="min-h-screen bg-bg text-white">
       <Navbar />
@@ -39,9 +64,10 @@ const Home = () => {
         {isLoading && <Loader />}
         {error && (
           <ErrorCard
-            title={error.includes('No publicly listed company') ? '⚠ Company not found' : 'Analysis unavailable'}
+            title={errorTitle}
             message={error.includes('No publicly listed company') ? 'We couldn’t find any publicly listed company matching your search.' : error}
-            subtitle={error.includes('No publicly listed company') ? 'Please try another company name and try again.' : null}
+            subtitle={error.includes('No publicly listed company') ? 'Please try another company name and try again.' : 'Please try again in a moment.'}
+            variant={errorVariant}
           />
         )}
 

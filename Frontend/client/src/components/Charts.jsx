@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, LabelList } from 'recharts';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) {
@@ -14,13 +14,11 @@ const formatCurrency = (value) => {
 };
 
 const Charts = ({ chartData }) => {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
-
-  const data = useMemo(() => {
+  const metrics = useMemo(() => {
     const values = Array.isArray(chartData) ? chartData : [];
     const resolvedValues = values.slice(0, 3);
 
-    const metrics = resolvedValues.map((entry, index) => {
+    return resolvedValues.map((entry, index) => {
       const label = entry?.name || 'Metric';
       const value = Number(entry?.value ?? 0);
       const color = index === 0 ? '#3B82F6' : index === 1 ? '#22C55E' : '#EF4444';
@@ -29,19 +27,15 @@ const Charts = ({ chartData }) => {
         label,
         value,
         displayValue: formatCurrency(value),
-        color,
-        key: index
+        color
       };
     });
-
-    const maxValue = Math.max(...metrics.map((item) => item.value || 0), 1);
-
-    return metrics.map((item) => ({ ...item, normalizedValue: (item.value / maxValue) * 100 }));
   }, [chartData]);
 
-  const currentPrice = data[0]?.value ?? null;
-  const weekHigh = data[1]?.value ?? null;
-  const weekLow = data[2]?.value ?? null;
+  const maxValue = Math.max(...metrics.map((item) => item.value || 0), 1);
+  const currentPrice = metrics[0]?.value ?? null;
+  const weekHigh = metrics[1]?.value ?? null;
+  const weekLow = metrics[2]?.value ?? null;
 
   const belowHighPct = currentPrice !== null && weekHigh !== null && weekHigh > 0
     ? ((weekHigh - currentPrice) / weekHigh) * 100
@@ -56,59 +50,31 @@ const Charts = ({ chartData }) => {
     ? currentPrice - weekLow
     : null;
 
-  const renderBar = (props) => {
-    const { x, y, width, height, fill, payload, index } = props;
-    const isHovered = hoveredIndex === index;
-
-    return (
-      <g>
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          rx={10}
-          ry={10}
-          fill={payload?.color || fill}
-          opacity={isHovered ? 1 : 0.95}
-          transform={isHovered ? 'translate(0, -3)' : 'translate(0, 0)'}
-          style={{ transition: 'all 200ms ease' }}
-          onMouseEnter={() => setHoveredIndex(index)}
-          onMouseLeave={() => setHoveredIndex(null)}
-        />
-      </g>
-    );
-  };
-
   return (
-    <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-soft">
+    <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-soft transition-all duration-300 hover:border-slate-400/20 hover:bg-slate-800/80">
       <div className="mb-5">
         <p className="text-sm uppercase tracking-[0.25em] text-slate-400">Stock Metrics</p>
         <h3 className="text-xl font-semibold">Momentum overview</h3>
       </div>
 
-      <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" barCategoryGap={18} margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
-            <CartesianGrid stroke="rgba(255,255,255,0.08)" horizontal={true} vertical={false} />
-            <XAxis type="number" domain={[0, 100]} hide />
-            <YAxis
-              dataKey="label"
-              type="category"
-              axisLine={false}
-              tickLine={false}
-              width={120}
-              tick={{ fill: '#94a3b8', fontSize: 12 }}
-            />
-            <Tooltip
-              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-              formatter={(value, name, props) => props?.payload?.displayValue || value}
-            />
-            <Bar dataKey="normalizedValue" radius={[0, 12, 12, 0]} barSize={24} shape={renderBar}>
-              <LabelList dataKey="displayValue" position="right" offset={8} fill="#e2e8f0" fontSize={12} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="space-y-4">
+        {metrics.map((item) => (
+          <div key={item.label} className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300">{item.label}</span>
+              <span className="font-medium text-white">{item.displayValue}</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.max(6, (item.value / maxValue) * 100)}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className="h-full rounded-full"
+                style={{ background: `linear-gradient(90deg, ${item.color}, ${item.color}cc)` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
